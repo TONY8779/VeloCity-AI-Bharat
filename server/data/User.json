@@ -1,0 +1,58 @@
+[
+  {
+    "_id": "4e8daba6-3c3d-4b95-922d-58e0162ed77d",
+    "displayName": "AdminUser",
+    "avatar": null,
+    "niche": "Tech",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "admin@velocity.com",
+    "passwordHash": "$2b$12$vO8pf6WW1WGlkeUwkewHkONzqC1ikGfnd4WJtj8xsYArE0INX8lZa",
+    "createdAt": "2026-02-15T03:23:42.089Z",
+    "updatedAt": "2026-02-15T03:23:42.089Z"
+  },
+  {
+    "_id": "bbfe0ac0-d069-4ac1-ac7f-106549dd9f4c",
+    "displayName": "baba",
+    "avatar": null,
+    "niche": "food",
+    "accountType": "free",
+    "role": "superadmin",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "demo@gmail.com",
+    "passwordHash": "$2b$12$yrG83DFkTppvFcAxiQlfgeRK2.ws4SqtepudNx2N1kEL/hGyyY3zG",
+    "createdAt": "2026-02-15T11:30:40.934Z",
+    "updatedAt": "2026-02-15T11:30:48.445Z"
+  }
+]

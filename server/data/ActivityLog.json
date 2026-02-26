@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "132f8fc7-b7c4-4f5b-857c-7df5bdf70693",
+    "details": "{}",
+    "userId": "bbfe0ac0-d069-4ac1-ac7f-106549dd9f4c",
+    "type": "admin_action",
+    "action": "bootstrap_superadmin",
+    "targetType": "User",
+    "targetId": "bbfe0ac0-d069-4ac1-ac7f-106549dd9f4c",
+    "description": "Admin bootstrap_superadmin: User bbfe0ac0-d069-4ac1-ac7f-106549dd9f4c",
+    "createdAt": "2026-02-15T11:30:48.445Z",
+    "updatedAt": "2026-02-15T11:30:48.445Z"
+  }
+]
