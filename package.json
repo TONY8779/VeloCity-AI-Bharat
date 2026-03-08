@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "render-build": "npm install && cd server && npm install && cd .. && npm run build",
+    "render-build": "npm install --include=dev && cd server && npm install && cd .. && npm run build",
     "render-start": "cd server && node index.js",
     "lint": "eslint .",
     "preview": "vite preview"
