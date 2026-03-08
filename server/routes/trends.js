@@ -77,7 +77,8 @@ Predict trend lifecycle accurately based on pattern matching.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        res.json(data);
+        if (data?.trends) return res.json(data);
+        throw new Error('No trends data');
     } catch (err) {
         console.error('Trends error:', err.message);
         const { niche } = req.body;

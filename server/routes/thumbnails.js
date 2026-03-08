@@ -68,7 +68,8 @@ Provide specific, production-ready suggestions.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        res.json(data);
+        if (data?.thumbnails) return res.json(data);
+        throw new Error('No thumbnail data');
     } catch (err) {
         console.error('Thumbnail error:', err.message);
         // Return fallback thumbnails so the UI always works

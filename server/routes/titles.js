@@ -76,7 +76,8 @@ Be specific and actionable.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        res.json(data);
+        if (data?.titles) return res.json(data);
+        throw new Error('No title data');
     } catch (err) {
         console.error('Titles error:', err.message);
         const { topic, niche } = req.body;

@@ -72,7 +72,8 @@ Never be generic. Match the creator's voice.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        res.json(data);
+        if (data?.analyzed) return res.json(data);
+        throw new Error('No analysis data');
     } catch (err) {
         console.error('CommentGenius error:', err.message);
         // Parse comments and return basic analysis

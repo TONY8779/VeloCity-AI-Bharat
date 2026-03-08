@@ -132,8 +132,11 @@ Use Hinglish naturally. Be specific with times, trends, and strategies.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        if (data) briefingCache.set(cacheKey, data);
-        res.json(data);
+        if (data?.opportunities) {
+            briefingCache.set(cacheKey, data);
+            return res.json(data);
+        }
+        throw new Error('No briefing data');
     } catch (err) {
         console.error('Briefing error:', err.message);
         const { niche } = req.body;

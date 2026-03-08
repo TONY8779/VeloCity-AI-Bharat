@@ -87,7 +87,8 @@ Always provide practical fixes for each issue found.`;
         };
 
         const data = await callGemini(prompt, sys, schema);
-        res.json(data);
+        if (data?.safetyScore != null) return res.json(data);
+        throw new Error('No scan data');
     } catch (err) {
         console.error('SafeGuard error:', err.message);
         res.json({
