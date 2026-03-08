@@ -22,7 +22,7 @@ router.post('/:id/share', authenticate, async (req, res) => {
     await logActivity(project._id, req.userId, 'share_link_created', { permissions });
 
     res.json({
-      shareUrl: `http://localhost:5173/shared/${token}`,
+      shareUrl: `${process.env.CLIENT_URL || 'http://localhost:5173'}/shared/${token}`,
       token,
       expiresAt,
       permissions,

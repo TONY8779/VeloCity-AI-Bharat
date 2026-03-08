@@ -8,6 +8,8 @@ import User from '../models/User.js';
 import { authenticate, loadUser } from '../middleware/auth.js';
 
 const router = Router();
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 // ─── Per-user login lockout tracking ───
 const loginAttempts = new Map(); // email → { count, lockedUntil }
@@ -282,7 +284,7 @@ router.post('/forgot-password', [
       message: 'If this email exists, a reset link has been generated.',
       // DEV ONLY — remove in production:
       resetToken,
-      resetUrl: `http://localhost:5173/reset-password?token=${resetToken}`,
+      resetUrl: `${CLIENT_URL}/reset-password?token=${resetToken}`,
     });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -336,7 +338,7 @@ function createOAuthClient() {
   return new google.auth.OAuth2(
     process.env.YOUTUBE_CLIENT_ID,
     process.env.YOUTUBE_CLIENT_SECRET,
-    'http://localhost:3001/auth/youtube/callback',
+    `${BASE_URL}/auth/youtube/callback`,
   );
 }
 
@@ -410,10 +412,10 @@ router.get('/youtube/callback', async (req, res) => {
 
     // Pass channel data in redirect URL so frontend can save to localStorage
     const channelParam = channelData ? encodeURIComponent(JSON.stringify(channelData)) : '';
-    res.redirect(`http://localhost:5173?youtube_connected=true&channel=${channelParam}`);
+    res.redirect(`${CLIENT_URL}?youtube_connected=true&channel=${channelParam}`);
   } catch (err) {
     console.error('YouTube OAuth error:', err.message);
-    res.redirect('http://localhost:5173?youtube_error=true');
+    res.redirect(`${CLIENT_URL}?youtube_error=true`);
   }
 });
 

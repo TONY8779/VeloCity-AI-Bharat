@@ -3,12 +3,13 @@ import { google } from 'googleapis';
 import { authenticate, loadUser } from '../middleware/auth.js';
 
 const router = Router();
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
 
 function getOAuthClient(user) {
   const oauth2Client = new google.auth.OAuth2(
     process.env.YOUTUBE_CLIENT_ID,
     process.env.YOUTUBE_CLIENT_SECRET,
-    'http://localhost:3001/auth/youtube/callback',
+    `${BASE_URL}/auth/youtube/callback`,
   );
   oauth2Client.setCredentials(user.youtubeTokens);
   return oauth2Client;
