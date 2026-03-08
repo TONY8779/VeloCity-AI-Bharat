@@ -57,7 +57,16 @@ export async function refactorRoadmap(params) {
 // Backward-compatible with existing notebook/roadmap calls
 export async function fetchRoadmap(niche, channelContext) {
     try {
-        return await withRetry(() => api.post('/api/bedrock/synthesize', { notes: `Generate a 10-day roadmap for ${niche}`, niche, channelContext }));
+        // Use a timeout to avoid long hangs when Bedrock is unavailable
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 10000)
+        );
+        const fetchPromise = api.post('/api/bedrock/synthesize', {
+            notes: `Generate a 10-day roadmap for ${niche}`,
+            niche,
+            channelContext,
+        });
+        return await Promise.race([fetchPromise, timeoutPromise]);
     } catch {
         return generateFallbackRoadmap(niche);
     }

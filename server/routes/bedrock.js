@@ -226,7 +226,7 @@ Return a valid JSON object:
 
         const userMsg = `Synthesize a ready-to-film viral script from these notes:\n${notes}`;
 
-        const data = await invokeBedrockWithRetry(systemPrompt, userMsg);
+        const data = await invokeBedrockWithRetry(systemPrompt, userMsg, 1);
         res.json(data);
     } catch (err) {
         console.error('Bedrock synthesize error:', err.message);
