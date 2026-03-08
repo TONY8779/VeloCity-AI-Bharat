@@ -102,7 +102,7 @@ export function LoginPage() {
         </div>
 
         <div className="mt-7 text-center">
-          <p className="text-[10px] text-zinc-700 font-medium tracking-wide">Vishal &middot; Bhumika &middot; Shlok &middot; Parth</p>
+          <p className="text-[10px] text-zinc-700 font-medium tracking-wide">Vishal &middot; Bhumika &middot; Shlok &middot; Soham</p>
           <p className="text-[9px] text-zinc-800 mt-0.5">Rizvi College AI Competition</p>
         </div>
       </div>
