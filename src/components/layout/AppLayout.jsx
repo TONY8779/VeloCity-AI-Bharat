@@ -6,7 +6,7 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useLiveClock } from '../../hooks/useLiveClock';
-import { geminiService } from '../../services/geminiService';
+import { awsService as geminiService } from '../../services/awsService';
 import { youtubeService } from '../../services/youtubeService';
 import { formatNumber } from '../../utils/formatters';
 
@@ -50,38 +50,64 @@ export function AppLayout() {
   // Auto-save status
   const [saveStatus, setSaveStatus] = useState('idle');
 
-  // Check YouTube connection
+  // Check YouTube connection (from OAuth callback redirect)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('youtube_connected') === 'true') {
       window.history.replaceState({}, '', location.pathname);
-      refreshUser();
       setYtConnected(true);
+
+      // Read channel data from URL params (passed by OAuth callback)
+      const channelParam = params.get('channel');
+      if (channelParam) {
+        try {
+          const channelData = JSON.parse(decodeURIComponent(channelParam));
+          setYtChannel(channelData);
+          // Persist to localStorage so it survives page refreshes
+          localStorage.setItem('velocity_yt_channel', JSON.stringify(channelData));
+          localStorage.setItem('velocity_yt_connected', 'true');
+        } catch (e) {
+          console.error('Failed to parse channel data:', e);
+        }
+      }
     }
-  }, [location, refreshUser]);
+
+    // Restore YouTube state from localStorage on mount
+    if (!ytConnected && localStorage.getItem('velocity_yt_connected') === 'true') {
+      setYtConnected(true);
+      try {
+        const saved = JSON.parse(localStorage.getItem('velocity_yt_channel'));
+        if (saved) setYtChannel(saved);
+      } catch { }
+    }
+  }, [location]);
 
   useEffect(() => {
-    setYtConnected(user?.youtubeConnected || false);
-    setYtChannel(user?.youtubeChannel || null);
+    // Only set from user object if user actually has YouTube data
+    // Don't overwrite state from OAuth callback or localStorage
+    if (user?.youtubeConnected && user?.youtubeChannel) {
+      setYtConnected(true);
+      setYtChannel(user.youtubeChannel);
+    }
   }, [user]);
 
   // Fetch YouTube data when connected
   useEffect(() => {
     if (!ytConnected) return;
     Promise.allSettled([
-      youtubeService.getChannel().then(data => { if (data?.title) setYtChannel(data); }).catch(() => {}),
-      youtubeService.getVideos().then(d => setYtVideos(Array.isArray(d?.videos) ? d.videos : [])).catch(() => {}),
+      youtubeService.getChannel().then(data => { if (data?.title) setYtChannel(data); }).catch(() => { }),
+      youtubeService.getVideos().then(d => setYtVideos(Array.isArray(d?.videos) ? d.videos : [])).catch(() => { }),
       youtubeService.getAnalytics().then(data => {
         if (data?.totals && data?.daily) {
           data.totals = { views: 0, watchTime: 0, subscribersGained: 0, subscribersLost: 0, netSubscribers: 0, avgViewDuration: 0, likes: 0, shares: 0, ...data.totals };
           data.daily = Array.isArray(data.daily) ? data.daily : [];
           setYtAnalytics(data);
         }
-      }).catch(() => {}),
-      youtubeService.getTopVideos().then(d => setYtTopVideos(Array.isArray(d?.topVideos) ? d.topVideos : [])).catch(() => {}),
+      }).catch(() => { }),
+      youtubeService.getTopVideos().then(d => setYtTopVideos(Array.isArray(d?.topVideos) ? d.topVideos : [])).catch(() => { }),
       youtubeService.getDemographics().then(d => {
         if (d) setYtDemographics({ ageGroups: Array.isArray(d.ageGroups) ? d.ageGroups : [], countries: Array.isArray(d.countries) ? d.countries : [] });
-      }).catch(() => {}),
+      }).catch(() => { }),
     ]);
   }, [ytConnected]);
 
@@ -131,22 +157,36 @@ export function AppLayout() {
   // YouTube handlers
   const handleYouTubeConnect = async () => {
     try {
-      const url = await youtubeService.getAuthUrl();
-      window.location.href = url;
-    } catch {
-      showError('YouTube OAuth server not running. Start the backend server.');
+      const token = localStorage.getItem('velocity_token');
+      const res = await fetch('/auth/youtube', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No OAuth URL returned');
+      }
+    } catch (err) {
+      console.error('YouTube connect error:', err);
+      showError('YouTube OAuth failed: ' + err.message);
     }
   };
 
   const handleYouTubeDisconnect = async () => {
-    await youtubeService.disconnect();
+    try { await youtubeService.disconnect(); } catch { }
+    localStorage.removeItem('velocity_yt_connected');
+    localStorage.removeItem('velocity_yt_channel');
     setYtConnected(false);
     setYtChannel(null);
     setYtVideos([]);
     setYtAnalytics(null);
     setYtTopVideos([]);
     setYtDemographics(null);
-    refreshUser();
   };
 
   // Close mobile menu on navigation
@@ -194,8 +234,7 @@ export function AppLayout() {
               end={to === '/'}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${
-                  isActive ? 'bg-white text-[#050506] shadow-lg' : 'text-zinc-500 hover:bg-white/5 hover:text-white'
+                `w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${isActive ? 'bg-white text-[#050506] shadow-lg' : 'text-zinc-500 hover:bg-white/5 hover:text-white'
                 }`
               }
             >

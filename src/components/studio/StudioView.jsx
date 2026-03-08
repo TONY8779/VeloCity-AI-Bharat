@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { FileText, Video, Upload, Trash2, Play, Pause, Volume2, Scissors, Filter, Wand2, RefreshCw, Download, PenTool, Music, Sparkles } from 'lucide-react';
+import { FileText, Video, Upload, Trash2, Play, Pause, Volume2, Scissors, Filter, Wand2, RefreshCw, Download, PenTool, Music, Sparkles, Cloud, Mic, MessageSquare, VolumeX } from 'lucide-react';
 import { useFFmpeg } from '../../hooks/useFFmpeg';
 import { useNotification } from '../../context/NotificationContext';
 import { formatDuration } from '../../utils/formatters';
 import { CSS_FILTERS, PLATFORM_PRESETS } from '../../utils/constants';
+import { uploadFile, startTranscription, getTranscriptionStatus, synthesizeSpeech, getTeleprompterAudio } from '../../services/awsService';
 
 export function StudioView() {
   const { roadmap, setRoadmap, selectedDay, setSelectedDay, generateStrategy, isGenerating } = useOutletContext();
@@ -30,8 +31,21 @@ export function StudioView() {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
 
+  // AWS states
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [s3Key, setS3Key] = useState(null);
+  const [s3Url, setS3Url] = useState(null);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcriptJobId, setTranscriptJobId] = useState(null);
+  const [captions, setCaptions] = useState([]);
+  const [showTranscribeCaptions, setShowTranscribeCaptions] = useState(false);
+  const [pollyVoice, setPollyVoice] = useState('Kajal');
+  const [pollyAudio, setPollyAudio] = useState(null);
+  const [pollyPlaying, setPollyPlaying] = useState(false);
+
   // Video handlers
-  const handleVideoUpload = (e) => {
+  const handleVideoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setVideoFile(file);
@@ -39,6 +53,28 @@ export function StudioView() {
     setActiveFilter('none');
     setTrimStart(0);
     setTrimEnd(0);
+    setCaptions([]);
+    setS3Key(null);
+    setS3Url(null);
+
+    // Upload to S3
+    setIsUploading(true);
+    setUploadProgress(10);
+    try {
+      const uploadInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 15, 90));
+      }, 300);
+      const result = await uploadFile(file, 'videos');
+      clearInterval(uploadInterval);
+      setUploadProgress(100);
+      setS3Key(result.key);
+      setS3Url(result.s3Url || result.cloudfrontUrl);
+      success('Video uploaded to S3');
+    } catch (err) {
+      showError('S3 upload failed — using local preview');
+    }
+    setIsUploading(false);
+    setTimeout(() => setUploadProgress(0), 1500);
   };
 
   const handleVideoLoaded = () => {
@@ -100,6 +136,68 @@ export function StudioView() {
     } else { setActiveCaption(''); }
   }, [isCaptioning, selectedDay]);
 
+  // Transcribe polling
+  useEffect(() => {
+    if (!transcriptJobId || !transcribing) return;
+    const poll = setInterval(async () => {
+      try {
+        const result = await getTranscriptionStatus(transcriptJobId);
+        if (result.status === 'COMPLETED') {
+          setCaptions(result.transcript?.segments || []);
+          setShowTranscribeCaptions(true);
+          setTranscribing(false);
+          setTranscriptJobId(null);
+          success('Captions generated!');
+        } else if (result.status === 'FAILED') {
+          setTranscribing(false);
+          setTranscriptJobId(null);
+          showError('Transcription failed');
+        }
+      } catch { /* keep polling */ }
+    }, 5000);
+    return () => clearInterval(poll);
+  }, [transcriptJobId, transcribing]);
+
+  const handleGenerateCaptions = async () => {
+    if (!s3Key) { showError('Upload video to S3 first'); return; }
+    setTranscribing(true);
+    try {
+      const result = await startTranscription(s3Key, 'hi-IN');
+      setTranscriptJobId(result.jobId);
+    } catch (err) {
+      setTranscribing(false);
+      showError('Failed to start transcription');
+    }
+  };
+
+  const handlePollyTeleprompter = async () => {
+    if (pollyPlaying && pollyAudio) {
+      pollyAudio.pause();
+      setPollyPlaying(false);
+      return;
+    }
+    if (!selectedDay?.script) { showError('No script loaded'); return; }
+    try {
+      const text = `${selectedDay.script.hook}. ${selectedDay.script.body}`;
+      const result = await synthesizeSpeech(text, pollyVoice);
+      if (result?.audioUrl) {
+        const audio = new Audio(result.audioUrl);
+        audio.onended = () => setPollyPlaying(false);
+        audio.play();
+        setPollyAudio(audio);
+        setPollyPlaying(true);
+      }
+    } catch (err) {
+      showError('Voice synthesis failed');
+    }
+  };
+
+  // Get current caption for timestamp
+  const getCurrentCaption = () => {
+    if (!showTranscribeCaptions || captions.length === 0) return null;
+    return captions.find(c => videoCurrentTime >= c.startTime && videoCurrentTime <= c.endTime);
+  };
+
   return (
     <div className="space-y-5">
       {/* Script Section */}
@@ -151,9 +249,8 @@ export function StudioView() {
             <div className="grid grid-cols-5 gap-2">
               {roadmap.map((item) => (
                 <button key={item.day} onClick={() => setSelectedDay(item)}
-                  className={`py-2.5 rounded-lg text-[12px] font-semibold transition-all ${
-                    selectedDay?.day === item.day ? 'bg-white text-[#050506]' : 'bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06]'
-                  }`}>{item.day}</button>
+                  className={`py-2.5 rounded-lg text-[12px] font-semibold transition-all ${selectedDay?.day === item.day ? 'bg-white text-[#050506]' : 'bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06]'
+                    }`}>{item.day}</button>
               ))}
             </div>
           </div>
@@ -194,15 +291,38 @@ export function StudioView() {
                     </span>
                   </div>
                 )}
+                {/* Transcribe captions */}
+                {showTranscribeCaptions && getCurrentCaption() && (
+                  <div className="absolute bottom-12 left-4 right-4 text-center pointer-events-none">
+                    <span className="bg-black/80 text-white px-4 py-2 text-sm font-medium rounded-lg inline-block">
+                      {getCurrentCaption().text}
+                    </span>
+                  </div>
+                )}
               </>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700">
                 <Upload size={36} className="mb-3 opacity-30" />
                 <p className="text-[12px] font-semibold">Drop or upload a video</p>
-                <p className="text-[10px] text-zinc-800 mt-1">MP4, MOV, WebM supported</p>
+                <p className="text-[10px] text-zinc-800 mt-1">MP4, MOV, WebM — uploads to S3</p>
+              </div>
+            )}
+            {/* Upload progress */}
+            {isUploading && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                <div className="h-full bg-blue-500 transition-all duration-300 rounded-full" style={{ width: `${uploadProgress}%` }} />
               </div>
             )}
           </div>
+
+          {/* S3 info */}
+          {s3Url && (
+            <div className="flex items-center gap-2 p-2.5 bg-green-500/[0.05] border border-green-500/20 rounded-xl text-[10px]">
+              <Cloud size={12} className="text-green-400" />
+              <span className="text-green-400 font-medium">Uploaded to S3</span>
+              <span className="text-zinc-600 truncate flex-1">{s3Key}</span>
+            </div>
+          )}
 
           {/* Playback Controls */}
           {videoUrl && (
@@ -256,9 +376,8 @@ export function StudioView() {
             <div className="grid grid-cols-2 gap-2">
               {['none', 'cinema', 'noir', 'warm', 'cool'].map((f) => (
                 <button key={f} onClick={() => setActiveFilter(f)}
-                  className={`py-2.5 rounded-lg text-[11px] font-semibold capitalize transition-all border ${
-                    activeFilter === f ? 'bg-white text-[#050506] border-white' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
-                  }`}>{f === 'none' ? 'Original' : f}</button>
+                  className={`py-2.5 rounded-lg text-[11px] font-semibold capitalize transition-all border ${activeFilter === f ? 'bg-white text-[#050506] border-white' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
+                    }`}>{f === 'none' ? 'Original' : f}</button>
               ))}
             </div>
           </div>
@@ -269,9 +388,8 @@ export function StudioView() {
             <div className="grid grid-cols-3 gap-2">
               {['mp4', 'webm', 'mov'].map((f) => (
                 <button key={f} onClick={() => setExportFormat(f)}
-                  className={`py-2 rounded-lg text-[11px] font-semibold uppercase transition-all border ${
-                    exportFormat === f ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
-                  }`}>{f}</button>
+                  className={`py-2 rounded-lg text-[11px] font-semibold uppercase transition-all border ${exportFormat === f ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
+                    }`}>{f}</button>
               ))}
             </div>
           </div>
@@ -282,9 +400,8 @@ export function StudioView() {
             <div className="grid grid-cols-3 gap-2">
               {['720p', '1080p', '4k'].map((r) => (
                 <button key={r} onClick={() => setExportResolution(r)}
-                  className={`py-2 rounded-lg text-[11px] font-semibold transition-all border ${
-                    exportResolution === r ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
-                  }`}>{r}</button>
+                  className={`py-2 rounded-lg text-[11px] font-semibold transition-all border ${exportResolution === r ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
+                    }`}>{r}</button>
               ))}
             </div>
           </div>
@@ -295,9 +412,8 @@ export function StudioView() {
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(PLATFORM_PRESETS).map(([key, preset]) => (
                 <button key={key} onClick={() => setExportPlatform(exportPlatform === key ? null : key)}
-                  className={`py-2 rounded-lg text-[10px] font-semibold transition-all border ${
-                    exportPlatform === key ? 'bg-purple-600 text-white border-purple-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
-                  }`}>{preset.label}</button>
+                  className={`py-2 rounded-lg text-[10px] font-semibold transition-all border ${exportPlatform === key ? 'bg-purple-600 text-white border-purple-600' : 'bg-white/[0.02] text-zinc-500 border-white/[0.04] hover:border-white/10'
+                    }`}>{preset.label}</button>
               ))}
             </div>
           </div>
@@ -312,9 +428,47 @@ export function StudioView() {
 
           {/* Caption Toggle */}
           <button onClick={() => setIsCaptioning(!isCaptioning)}
-            className={`w-full py-3 rounded-xl font-semibold text-[11px] transition-all ${
-              isCaptioning ? 'bg-green-600 text-white' : 'bg-white/[0.04] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.08]'
-            }`}>{isCaptioning ? 'Captions ON' : 'Viral Captions'}</button>
+            className={`w-full py-3 rounded-xl font-semibold text-[11px] transition-all ${isCaptioning ? 'bg-green-600 text-white' : 'bg-white/[0.04] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.08]'
+              }`}>Viral Captions {isCaptioning ? 'ON' : 'OFF'}</button>
+
+          {/* Transcribe Captions */}
+          <button onClick={handleGenerateCaptions} disabled={!s3Key || transcribing}
+            className={`w-full py-3 rounded-xl font-semibold text-[11px] transition-all flex items-center justify-center gap-2 ${transcribing ? 'bg-orange-600 text-white' : 'bg-white/[0.04] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.08] disabled:opacity-30'
+              }`}>
+            {transcribing ? <><RefreshCw className="animate-spin" size={12} /> Transcribing...</> : <><Mic size={12} /> Generate Real Captions</>}
+          </button>
+
+          {/* Transcribe caption list */}
+          {captions.length > 0 && (
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              <p className="text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Transcribed Segments</p>
+              {captions.map((c, i) => (
+                <div key={i} className="text-[10px] text-zinc-400 bg-white/[0.02] rounded-lg px-2 py-1 cursor-pointer hover:bg-white/[0.04]"
+                  onClick={() => { if (videoRef.current) videoRef.current.currentTime = c.startTime; }}>
+                  <span className="text-zinc-600">{c.startTime?.toFixed(1)}s</span> {c.text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Polly Teleprompter */}
+          <div className="border-t border-white/[0.04] pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                <Volume2 size={10} /> AI Voice Teleprompter
+              </p>
+              <select value={pollyVoice} onChange={(e) => setPollyVoice(e.target.value)}
+                className="bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 py-1 text-[10px] text-zinc-400 focus:outline-none">
+                <option value="Kajal">Kajal (Neural)</option>
+                <option value="Aditi">Aditi (Standard)</option>
+              </select>
+            </div>
+            <button onClick={handlePollyTeleprompter} disabled={!selectedDay?.script}
+              className={`w-full py-3 rounded-xl font-semibold text-[11px] transition-all flex items-center justify-center gap-2 ${pollyPlaying ? 'bg-purple-600 text-white' : 'bg-white/[0.04] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.08] disabled:opacity-30'
+                }`}>
+              {pollyPlaying ? <><VolumeX size={12} /> Stop Voice</> : <><Volume2 size={12} /> Read Script Aloud</>}
+            </button>
+          </div>
 
           {/* Export */}
           <button onClick={handleExport} disabled={!videoFile || isExporting}

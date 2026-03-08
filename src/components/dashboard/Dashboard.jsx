@@ -2,6 +2,7 @@ import React from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Users, Eye, Video, TrendingUp, LogOut, ExternalLink, Flame, Play, Music, ThumbsUp, MessageCircle } from 'lucide-react';
 import { formatNumber, parseISODuration } from '../../utils/formatters';
+import { AWSHealthWidget } from './AWSHealthWidget';
 
 export function Dashboard() {
   const {
@@ -13,6 +14,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* AWS Service Health */}
+      <AWSHealthWidget />
+
       {ytConnected && ytChannel ? (
         <>
           {/* Channel Overview */}
@@ -166,7 +170,7 @@ export function Dashboard() {
         <div className="space-y-6">
           {/* Connect YouTube CTA */}
           <div className="bg-[#0a0a0b] rounded-2xl border border-white/[0.04] p-8 text-center">
-            <svg width="40" height="28" viewBox="0 0 24 17" fill="none" className="mx-auto mb-4 opacity-50"><path d="M23.5 2.5A3 3 0 0021.4.4C19.5 0 12 0 12 0S4.5 0 2.6.4A3 3 0 00.5 2.5 31.5 31.5 0 000 8.5a31.5 31.5 0 00.5 6A3 3 0 002.6 16.6c1.9.4 9.4.4 9.4.4s7.5 0 9.4-.4a3 3 0 002.1-2.1 31.5 31.5 0 00.5-6 31.5 31.5 0 00-.5-6z" fill="#FF0000"/><path d="M9.75 12.02l6.25-3.52-6.25-3.52v7.04z" fill="#fff"/></svg>
+            <svg width="40" height="28" viewBox="0 0 24 17" fill="none" className="mx-auto mb-4 opacity-50"><path d="M23.5 2.5A3 3 0 0021.4.4C19.5 0 12 0 12 0S4.5 0 2.6.4A3 3 0 00.5 2.5 31.5 31.5 0 000 8.5a31.5 31.5 0 00.5 6A3 3 0 002.6 16.6c1.9.4 9.4.4 9.4.4s7.5 0 9.4-.4a3 3 0 002.1-2.1 31.5 31.5 0 00.5-6 31.5 31.5 0 00-.5-6z" fill="#FF0000" /><path d="M9.75 12.02l6.25-3.52-6.25-3.52v7.04z" fill="#fff" /></svg>
             <h3 className="text-lg font-bold mb-2">Connect Your YouTube Channel</h3>
             <p className="text-sm text-zinc-500 mb-5 max-w-md mx-auto">Get real subscriber counts, view analytics, watch time data, audience demographics, and video performance.</p>
             <button onClick={handleYouTubeConnect} className="bg-white text-[#050506] px-6 py-3 rounded-xl font-semibold text-sm hover:bg-zinc-100 transition-all inline-flex items-center gap-2">

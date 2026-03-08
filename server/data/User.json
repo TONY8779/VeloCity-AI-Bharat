@@ -54,5 +54,201 @@
     "passwordHash": "$2b$12$yrG83DFkTppvFcAxiQlfgeRK2.ws4SqtepudNx2N1kEL/hGyyY3zG",
     "createdAt": "2026-02-15T11:30:40.934Z",
     "updatedAt": "2026-02-15T11:30:48.445Z"
+  },
+  {
+    "_id": "8ccadd56-afaf-43c5-afee-eeb330997e47",
+    "displayName": "AWSTestUser",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "awstest@velocity.app",
+    "passwordHash": "$2b$12$oFZIqf8I2ineMZWDsZKZ.uE9fGdGpwBwkgYLQrJSofmV4aZzEjnMG",
+    "createdAt": "2026-03-02T03:04:13.525Z",
+    "updatedAt": "2026-03-02T03:04:13.525Z"
+  },
+  {
+    "_id": "87819c21-f47c-473d-b667-b6b2af6d1405",
+    "displayName": "AWSTest",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "aws@test.com",
+    "passwordHash": "$2b$12$2jfoPaKLUJ5CS3LRzgQ/IuTvs27ijwJrSOv1Z1bRW9i3j6xJK02bC",
+    "createdAt": "2026-03-02T03:06:44.342Z",
+    "updatedAt": "2026-03-02T03:06:44.342Z"
+  },
+  {
+    "_id": "524f8189-01f7-480e-a6aa-a5e7545877d2",
+    "displayName": "AWSTest2",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "aws2@test.com",
+    "passwordHash": "$2b$12$npEB6bP1KraKWy7rYq843OqzS2VgboEm2zlgZbffc3lpEf5t1hI5y",
+    "createdAt": "2026-03-02T03:07:25.874Z",
+    "updatedAt": "2026-03-02T03:07:25.874Z"
+  },
+  {
+    "_id": "411b14e8-aaa6-4cfa-9b60-cbf21929d418",
+    "displayName": "AWSTest3",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "aws3@test.com",
+    "passwordHash": "$2b$12$KPXOrjSjBNZn3IfFz4wWveyNxjXxF2KRwcxhOcWL.U6i.MntmWNdq",
+    "createdAt": "2026-03-02T03:08:00.703Z",
+    "updatedAt": "2026-03-02T03:08:00.703Z"
+  },
+  {
+    "_id": "e635f8db-11ed-43a1-8062-209c514d491f",
+    "displayName": "BedrockTest",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "bedrock@test.com",
+    "passwordHash": "$2b$12$cGt7BUi9T8nkIJK4/X4qi./CTMVbSOl8ZWLfj38m3Q9WTW9rKcSJG",
+    "createdAt": "2026-03-02T03:20:27.122Z",
+    "updatedAt": "2026-03-02T03:20:27.122Z"
+  },
+  {
+    "_id": "3d7dff55-b32a-4148-9893-1d128d4917fc",
+    "displayName": "HaikuTest",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "haiku@test.com",
+    "passwordHash": "$2b$12$/i4FWJ4FH5pxhUYq5PBJoeYihSeTwOdxTkK/IUm/6Wl41Nab2tYle",
+    "createdAt": "2026-03-02T03:22:16.932Z",
+    "updatedAt": "2026-03-02T03:22:16.932Z"
+  },
+  {
+    "_id": "2f7e5297-3e50-49e1-a0da-0bf9ab61296a",
+    "displayName": "NovaTest",
+    "avatar": null,
+    "niche": "",
+    "accountType": "free",
+    "role": "user",
+    "status": "active",
+    "tokenVersion": 0,
+    "resetToken": null,
+    "resetTokenExpiry": null,
+    "youtubeTokens": null,
+    "youtubeChannel": null,
+    "preferences": {
+      "defaultExportFormat": "mp4",
+      "defaultResolution": "1080p",
+      "notificationSettings": {
+        "email": true,
+        "inApp": true
+      }
+    },
+    "storageUsed": 0,
+    "storageLimit": 10737418240,
+    "email": "nova@test.com",
+    "passwordHash": "$2b$12$Ak2Va56J.E8s7YtxH4PnqOIyT6SLaVtyrz4cuK.zbd.qImUMasS8.",
+    "createdAt": "2026-03-02T03:24:17.471Z",
+    "updatedAt": "2026-03-02T03:24:17.471Z"
   }
 ]

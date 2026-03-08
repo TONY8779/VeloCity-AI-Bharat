@@ -3,8 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import {
     Image, Upload, Sparkles, RefreshCw, Eye, BarChart3, Type,
-    Smile, Download, Star, Target, CheckCircle2, Palette, Layers
+    Smile, Download, Star, Target, CheckCircle2, Palette, Layers, Shield
 } from 'lucide-react';
+import { uploadFile, analyzeThumbnail, compareThumbnails } from '../../services/awsService';
 
 export function ThumbMasterView() {
     const { user } = useAuth();
@@ -17,13 +18,31 @@ export function ThumbMasterView() {
     const canvasRef = useRef(null);
     const fileInputRef = useRef(null);
     const niche = user?.niche || 'general';
+    const [s3Key, setS3Key] = useState(null);
+    const [rekAnalysis, setRekAnalysis] = useState(null);
+    const [analyzing, setAnalyzing] = useState(false);
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => setUploadedImage(ev.target.result);
         reader.readAsDataURL(file);
+
+        // Upload to S3 for Rekognition
+        try {
+            const result = await uploadFile(file, 'thumbnails');
+            setS3Key(result.key);
+
+            // Auto-analyze with Rekognition
+            setAnalyzing(true);
+            const analysis = await analyzeThumbnail(result.key);
+            setRekAnalysis(analysis);
+            setAnalyzing(false);
+        } catch (err) {
+            showError('Upload or analysis failed');
+            setAnalyzing(false);
+        }
     };
 
     const generateThumbnails = useCallback(async () => {
@@ -96,6 +115,65 @@ export function ThumbMasterView() {
                         </div>
                         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                     </div>
+
+                    {/* Rekognition Analysis */}
+                    {analyzing && (
+                        <div className="flex items-center gap-2 p-3 bg-orange-500/[0.05] rounded-xl text-[11px] text-orange-400">
+                            <RefreshCw size={12} className="animate-spin" /> Analyzing with AWS Rekognition...
+                        </div>
+                    )}
+                    {rekAnalysis && (
+                        <div className="space-y-3">
+                            {/* Thumbnail Score */}
+                            <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.04]">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Thumbnail Score</span>
+                                    <span className={`text-2xl font-black ${rekAnalysis.thumbnailScore >= 70 ? 'text-green-400' : rekAnalysis.thumbnailScore >= 40 ? 'text-amber-400' : 'text-red-400'}`}>
+                                        {rekAnalysis.thumbnailScore}/100
+                                    </span>
+                                </div>
+                                <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all duration-500 ${rekAnalysis.thumbnailScore >= 70 ? 'bg-green-500' : rekAnalysis.thumbnailScore >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                        style={{ width: `${rekAnalysis.thumbnailScore}%` }} />
+                                </div>
+                            </div>
+
+                            {/* Faces */}
+                            {rekAnalysis.faces?.length > 0 && (
+                                <div className="p-3 bg-blue-500/[0.03] rounded-xl border border-blue-500/10">
+                                    <p className="text-[9px] text-blue-400 font-semibold uppercase tracking-wider mb-1">Faces Detected: {rekAnalysis.faces.length}</p>
+                                    {rekAnalysis.faces.map((f, i) => (
+                                        <div key={i} className="text-[10px] text-zinc-400">
+                                            {f.emotions?.[0] && <span className="text-blue-300">Emotion: {f.emotions[0].type}</span>}
+                                            {f.smile && <span className="ml-2 text-green-400">😊 Smiling</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Labels */}
+                            {rekAnalysis.labels?.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                    {rekAnalysis.labels.slice(0, 10).map((l, i) => (
+                                        <span key={i} className="text-[9px] bg-white/[0.04] rounded-lg px-2 py-0.5 text-zinc-400">{l.name} ({l.confidence}%)</span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Suggestions */}
+                            {rekAnalysis.suggestions?.length > 0 && (
+                                <div className="space-y-1">
+                                    <p className="text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">AI Suggestions</p>
+                                    {rekAnalysis.suggestions.map((s, i) => (
+                                        <div key={i} className="flex items-start gap-1.5 text-[10px] text-zinc-400">
+                                            <CheckCircle2 size={10} className="text-cyan-400 mt-0.5 shrink-0" />
+                                            {s}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <button
                         onClick={generateThumbnails}
                         disabled={loading || !videoTitle.trim()}
@@ -172,8 +250,8 @@ export function ThumbMasterView() {
                                 key={i}
                                 onClick={() => setSelectedThumb(thumb)}
                                 className={`rounded-xl overflow-hidden border-2 transition-all ${selectedThumb?.variant === thumb.variant
-                                        ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
-                                        : 'border-transparent hover:border-white/20'
+                                    ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
+                                    : 'border-transparent hover:border-white/20'
                                     }`}
                             >
                                 <div

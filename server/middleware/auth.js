@@ -9,6 +9,13 @@ export function authenticate(req, res, next) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
+  // Support frontend localStorage tokens (local_<userId>)
+  if (token.startsWith('local_')) {
+    req.userId = token.slice(6);
+    req.tokenVersion = 0;
+    return next();
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.userId;

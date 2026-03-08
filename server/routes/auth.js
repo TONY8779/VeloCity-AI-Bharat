@@ -341,7 +341,20 @@ function createOAuthClient() {
 }
 
 // GET /auth/youtube — initiate OAuth
-router.get('/youtube', authenticate, (req, res) => {
+router.get('/youtube', (req, res) => {
+  // Extract userId from token if present (but don't require auth)
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  let userId = 'anonymous';
+  if (token?.startsWith('local_')) {
+    userId = token.slice(6);
+  } else if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch { }
+  }
+
   const oauth2Client = createOAuthClient();
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -350,10 +363,13 @@ router.get('/youtube', authenticate, (req, res) => {
       'https://www.googleapis.com/auth/yt-analytics.readonly',
     ],
     prompt: 'consent',
-    state: req.userId, // pass userId in state
+    state: userId,
   });
   res.json({ url });
 });
+
+// In-memory YouTube token store (works with any userId, including localStorage IDs)
+const youtubeStore = new Map();
 
 // GET /auth/youtube/callback
 router.get('/youtube/callback', async (req, res) => {
@@ -365,7 +381,7 @@ router.get('/youtube/callback', async (req, res) => {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Fetch channel info to cache
+    // Fetch channel info
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
     const channelRes = await youtube.channels.list({
       part: 'snippet,statistics',
@@ -383,12 +399,18 @@ router.get('/youtube/callback', async (req, res) => {
       customUrl: channel.snippet.customUrl,
     } : null;
 
-    await User.findByIdAndUpdate(userId, {
+    // Store in memory (works with any userId)
+    youtubeStore.set(userId, { tokens, channel: channelData });
+
+    // Also try to save to User model (if user exists in DB)
+    User.findByIdAndUpdate(userId, {
       youtubeTokens: tokens,
       youtubeChannel: channelData,
-    });
+    }).catch(() => { });
 
-    res.redirect('http://localhost:5173?youtube_connected=true');
+    // Pass channel data in redirect URL so frontend can save to localStorage
+    const channelParam = channelData ? encodeURIComponent(JSON.stringify(channelData)) : '';
+    res.redirect(`http://localhost:5173?youtube_connected=true&channel=${channelParam}`);
   } catch (err) {
     console.error('YouTube OAuth error:', err.message);
     res.redirect('http://localhost:5173?youtube_error=true');
@@ -396,30 +418,54 @@ router.get('/youtube/callback', async (req, res) => {
 });
 
 // GET /auth/youtube/status
-router.get('/youtube/status', authenticate, loadUser, (req, res) => {
-  res.json({
-    connected: !!req.user.youtubeTokens,
-    channel: req.user.youtubeChannel,
-  });
+router.get('/youtube/status', (req, res) => {
+  // Extract userId from token
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  let userId = null;
+  if (token?.startsWith('local_')) {
+    userId = token.slice(6);
+  } else if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch { }
+  }
+
+  // Check in-memory store first
+  const stored = userId ? youtubeStore.get(userId) : null;
+  if (stored) {
+    return res.json({ connected: true, channel: stored.channel });
+  }
+
+  res.json({ connected: false, channel: null });
 });
 
 // POST /auth/youtube/disconnect
-router.post('/youtube/disconnect', authenticate, loadUser, async (req, res) => {
-  try {
-    if (req.user.youtubeTokens) {
+router.post('/youtube/disconnect', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  let userId = null;
+  if (token?.startsWith('local_')) {
+    userId = token.slice(6);
+  } else if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch { }
+  }
+
+  if (userId) {
+    const stored = youtubeStore.get(userId);
+    if (stored?.tokens) {
       const oauth2Client = createOAuthClient();
-      oauth2Client.setCredentials(req.user.youtubeTokens);
+      oauth2Client.setCredentials(stored.tokens);
       oauth2Client.revokeCredentials().catch(() => { });
     }
-    await User.findByIdAndUpdate(req.userId, {
-      youtubeTokens: null,
-      youtubeChannel: null,
-    });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('YouTube disconnect error:', err);
-    res.status(500).json({ error: 'Disconnect failed' });
+    youtubeStore.delete(userId);
   }
+
+  res.json({ ok: true });
 });
 
 export default router;

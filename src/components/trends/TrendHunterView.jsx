@@ -3,10 +3,11 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import {
     Flame, TrendingUp, TrendingDown, Minus, Clock, Zap, Twitter, Youtube,
     MessageSquare, Eye, ArrowRight, RefreshCw, Sparkles, BarChart3, Target,
-    ExternalLink, BookOpen
+    ExternalLink, BookOpen, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { getTrendAnalysis, getCachedTrends, cacheTrends } from '../../services/awsService';
 
 const PLATFORMS = [
     { id: 'all', label: 'All Platforms', icon: Flame },
@@ -30,26 +31,36 @@ export function TrendHunterView() {
     const [trends, setTrends] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedTrend, setSelectedTrend] = useState(null);
+    const [region, setRegion] = useState('Pan-India');
     const niche = user?.niche || 'general';
+
+    const REGIONS = ['Pan-India', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Hyderabad'];
 
     const fetchTrends = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/trends/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-                body: JSON.stringify({ niche, platform: activePlatform }),
-            });
-            const data = await res.json();
-            if (data.trends) {
-                setTrends(data.trends);
-                if (data.trends.length > 0) setSelectedTrend(data.trends[0]);
+            // Check DynamoDB cache first
+            const cached = await getCachedTrends(niche).catch(() => null);
+            if (cached?.cached && cached.trends) {
+                setTrends(cached.trends);
+                if (cached.trends.length > 0) setSelectedTrend(cached.trends[0]);
+                setLoading(false);
+                return;
+            }
+            // Fetch from Bedrock
+            const data = await getTrendAnalysis(niche, region);
+            const trendData = data.trendingTopics || data.trends || [];
+            if (trendData.length > 0) {
+                setTrends(trendData);
+                setSelectedTrend(trendData[0]);
+                // Cache to DynamoDB
+                cacheTrends({ niche, trends: trendData, region }).catch(() => { });
             }
         } catch (err) {
             showError('Failed to fetch trends');
         }
         setLoading(false);
-    }, [niche, activePlatform, showError]);
+    }, [niche, region, showError]);
 
     const getVelocityStyle = (score) => {
         if (score >= 80) return VELOCITY_COLORS.hot;
@@ -95,12 +106,22 @@ export function TrendHunterView() {
                         key={id}
                         onClick={() => setActivePlatform(id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${activePlatform === id
-                                ? 'bg-white text-black'
-                                : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                            ? 'bg-white text-black'
+                            : 'bg-white/5 text-zinc-400 hover:bg-white/10'
                             }`}
                     >
                         <Icon size={14} /> {label}
                     </button>
+                ))}
+            </div>
+
+            {/* Region Filter */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+                <MapPin size={14} className="text-zinc-500 mt-1.5 shrink-0" />
+                {REGIONS.map(r => (
+                    <button key={r} onClick={() => setRegion(r)}
+                        className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all ${region === r ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-white/[0.03] text-zinc-500 border border-white/[0.04] hover:bg-white/[0.06]'
+                            }`}>{r}</button>
                 ))}
             </div>
 
@@ -126,8 +147,8 @@ export function TrendHunterView() {
                                     key={i}
                                     onClick={() => setSelectedTrend(trend)}
                                     className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
-                                            ? `bg-gradient-to-r ${style.bg} ${style.border} shadow-lg`
-                                            : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.05]'
+                                        ? `bg-gradient-to-r ${style.bg} ${style.border} shadow-lg`
+                                        : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.05]'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between gap-2 mb-2">

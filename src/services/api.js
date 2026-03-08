@@ -16,8 +16,10 @@ class ApiClient {
 
   getHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Always read fresh from localStorage (token may be set after login)
+    const token = localStorage.getItem('velocity_token') || this.token;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
   }
@@ -34,9 +36,13 @@ class ApiClient {
     const res = await fetch(`${API_BASE}${path}`, options);
 
     if (res.status === 401) {
-      this.setToken(null);
-      window.location.href = '/login';
-      throw new Error('Session expired');
+      // Only auto-logout for explicit auth-check endpoints
+      const isAuthCheck = path === '/auth/me' || path === '/auth/youtube/status';
+      if (isAuthCheck) {
+        this.setToken(null);
+        window.location.href = '/login';
+      }
+      throw new Error('Authentication required');
     }
 
     if (!res.ok) {

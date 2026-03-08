@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Eye, Clock, Users, AlertCircle, Sparkles, RefreshCw, RotateCcw, TrendingUp, Target, Zap } from 'lucide-react';
 import { formatNumber } from '../../utils/formatters';
-import { geminiService } from '../../services/geminiService';
+import { awsService as geminiService } from '../../services/awsService';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -122,11 +122,10 @@ export function GrowthView() {
             {trends.slice(0, 8).map((t, i) => (
               <div key={i} className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04] hover:border-white/10 transition-all">
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${
-                    t.trajectory === 'rising' ? 'bg-green-500/10 text-green-400' :
-                    t.trajectory === 'peaking' ? 'bg-amber-500/10 text-amber-400' :
-                    'bg-red-500/10 text-red-400'
-                  }`}>{t.trajectory}</span>
+                  <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${t.trajectory === 'rising' ? 'bg-green-500/10 text-green-400' :
+                      t.trajectory === 'peaking' ? 'bg-amber-500/10 text-amber-400' :
+                        'bg-red-500/10 text-red-400'
+                    }`}>{t.trajectory}</span>
                   <span className="text-[11px] font-bold text-blue-400">{t.score}%</span>
                 </div>
                 <h4 className="text-[13px] font-semibold mb-1 line-clamp-2">{t.topic}</h4>
@@ -162,16 +161,14 @@ export function GrowthView() {
             )}
             <div className="space-y-2.5">
               {anomalies.anomalies.map((a, i) => (
-                <div key={i} className={`p-4 rounded-xl border flex items-start gap-3 ${
-                  a.severity === 'critical' ? 'bg-red-500/5 border-red-500/15' :
-                  a.severity === 'medium' ? 'bg-orange-500/5 border-orange-500/15' :
-                  'bg-yellow-500/5 border-yellow-500/15'
-                }`}>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex-shrink-0 ${
-                    a.severity === 'critical' ? 'bg-red-500/10 text-red-400' :
-                    a.severity === 'medium' ? 'bg-orange-500/10 text-orange-400' :
-                    'bg-yellow-500/10 text-yellow-400'
-                  }`}>{a.time}</span>
+                <div key={i} className={`p-4 rounded-xl border flex items-start gap-3 ${a.severity === 'critical' ? 'bg-red-500/5 border-red-500/15' :
+                    a.severity === 'medium' ? 'bg-orange-500/5 border-orange-500/15' :
+                      'bg-yellow-500/5 border-yellow-500/15'
+                  }`}>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex-shrink-0 ${a.severity === 'critical' ? 'bg-red-500/10 text-red-400' :
+                      a.severity === 'medium' ? 'bg-orange-500/10 text-orange-400' :
+                        'bg-yellow-500/10 text-yellow-400'
+                    }`}>{a.time}</span>
                   <div className="flex-1">
                     <p className="text-[13px] font-medium">{a.reason}</p>
                     <p className="text-[10px] text-zinc-600 mt-0.5">

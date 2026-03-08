@@ -3,8 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import {
     MessageCircle, Sparkles, RefreshCw, ThumbsUp, ThumbsDown, AlertTriangle,
-    Pin, Reply, Send, Shield, Smile, Frown, Meh, BarChart3, Bot, Zap, Filter
+    Pin, Reply, Send, Shield, Smile, Frown, Meh, BarChart3, Bot, Zap, Filter, Globe2, Brain
 } from 'lucide-react';
+import { analyzeComments as awsAnalyzeComments, chatWithAlgorithm } from '../../services/awsService';
 
 const SENTIMENT_CONFIG = {
     positive: { icon: Smile, color: 'text-green-400', bg: 'bg-green-500/20', label: 'Positive' },
@@ -21,6 +22,7 @@ export function CommentGeniusView() {
     const [filter, setFilter] = useState('all');
     const [sampleText, setSampleText] = useState('');
     const [engagementTips, setEngagementTips] = useState([]);
+    const [comprehendData, setComprehendData] = useState(null);
     const niche = user?.niche || 'general';
 
     const analyzeComments = useCallback(async () => {
@@ -30,14 +32,22 @@ export function CommentGeniusView() {
         }
         setLoading(true);
         try {
-            const res = await fetch('/api/commentgenius/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-                body: JSON.stringify({ comments: sampleText, niche }),
-            });
-            const data = await res.json();
-            if (data.analyzed) setComments(data.analyzed);
-            if (data.engagementTips) setEngagementTips(data.engagementTips);
+            // Parse comments from text
+            const commentList = sampleText.split('\n').filter(c => c.trim()).map(text => ({ text: text.trim() }));
+
+            // Use existing endpoint AND Comprehend in parallel
+            const [existingRes, comprehendRes] = await Promise.all([
+                fetch('/api/commentgenius/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
+                    body: JSON.stringify({ comments: sampleText, niche }),
+                }).then(r => r.json()).catch(() => null),
+                awsAnalyzeComments(commentList).catch(() => null),
+            ]);
+
+            if (existingRes?.analyzed) setComments(existingRes.analyzed);
+            if (existingRes?.engagementTips) setEngagementTips(existingRes.engagementTips);
+            if (comprehendRes) setComprehendData(comprehendRes);
         } catch (err) { showError('Failed to analyze comments'); }
         setLoading(false);
     }, [sampleText, niche, showError]);
@@ -65,7 +75,7 @@ export function CommentGeniusView() {
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <MessageCircle className="text-sky-400" size={22} /> CommentGenius
                 </h2>
-                <p className="text-xs text-zinc-500 mt-1">AI-powered comment management & engagement</p>
+                <p className="text-xs text-zinc-500 mt-1">AI-powered comment management & engagement · Powered by AWS Comprehend</p>
             </div>
 
             {/* Input Area */}
@@ -198,6 +208,75 @@ export function CommentGeniusView() {
                                     );
                                 })}
                             </div>
+
+                            {/* AWS Comprehend Analysis */}
+                            {comprehendData && (
+                                <>
+                                    {/* Language Breakdown */}
+                                    <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                            <Globe2 size={14} className="text-green-400" /> Language Breakdown
+                                        </h3>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {Object.entries(comprehendData.languageBreakdown || {}).map(([lang, pct]) => (
+                                                <div key={lang} className="bg-white/[0.03] rounded-xl p-3 text-center">
+                                                    <p className="text-lg font-bold">{pct}%</p>
+                                                    <p className="text-[9px] text-zinc-500 capitalize">{lang}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Key Phrases */}
+                                    {comprehendData.topKeyPhrases?.length > 0 && (
+                                        <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                                <Brain size={14} className="text-blue-400" /> Key Phrases
+                                            </h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {comprehendData.topKeyPhrases.slice(0, 15).map((p, i) => (
+                                                    <span key={i} className="text-[10px] bg-blue-500/10 text-blue-300 px-2.5 py-1 rounded-lg border border-blue-500/20">
+                                                        {p.phrase} ({p.count})
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Actionable Insights */}
+                                    {comprehendData.actionableInsights?.length > 0 && (
+                                        <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/[0.03] to-blue-500/[0.03] border border-purple-500/10">
+                                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                                <Sparkles size={14} className="text-purple-400" /> The Algorithm's Insights
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {comprehendData.actionableInsights.map((insight, i) => (
+                                                    <div key={i} className="p-3 bg-white/[0.03] rounded-xl flex items-start gap-2">
+                                                        <Zap size={12} className="text-amber-400 mt-0.5 shrink-0" />
+                                                        <p className="text-xs text-zinc-300">{insight}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Toxic Comments */}
+                                    {comprehendData.toxicComments?.length > 0 && (
+                                        <div className="p-5 rounded-2xl bg-red-500/[0.03] border border-red-500/10">
+                                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-red-400">
+                                                <Shield size={14} /> Toxic Comments ({comprehendData.toxicComments.length})
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {comprehendData.toxicComments.map((tc, i) => (
+                                                    <div key={i} className="p-2 bg-red-500/[0.05] rounded-lg text-[11px] text-zinc-300">
+                                                        "{tc.text}" — <span className="text-red-400">{tc.reason}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </>
