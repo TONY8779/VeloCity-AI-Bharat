@@ -24,7 +24,7 @@ export function TitleCraftView() {
         try {
             const res = await fetch('/api/titles/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
                 body: JSON.stringify({ topic, niche }),
             });
             const data = await res.json();

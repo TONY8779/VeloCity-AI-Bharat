@@ -20,7 +20,7 @@ export function BriefingView() {
         try {
             const res = await fetch('/api/briefing/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
                 body: JSON.stringify({ niche }),
             });
             const data = await res.json();

@@ -11,7 +11,7 @@ export function AdminExport() {
     const [exporting, setExporting] = useState(false);
     const [exportHistory, setExportHistory] = useState([]);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('velocity_token');
 
     useEffect(() => {
         fetch('/api/admin/collections', {

@@ -15,7 +15,7 @@ export function AdminDatabase() {
     const [expandedDoc, setExpandedDoc] = useState(null);
     const [copied, setCopied] = useState(null);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('velocity_token');
     const headers = { Authorization: `Bearer ${token}` };
 
     useEffect(() => {

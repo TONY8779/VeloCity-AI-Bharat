@@ -29,7 +29,7 @@ export function CompetitorView() {
         try {
             const res = await fetch('/api/competitors/add', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
                 body: JSON.stringify({ channelUrl: channelUrl.trim(), niche }),
             });
             const data = await res.json();
@@ -50,7 +50,7 @@ export function CompetitorView() {
         try {
             const res = await fetch('/api/competitors/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
                 body: JSON.stringify({ competitors: competitors.map(c => c.name), niche }),
             });
             const data = await res.json();

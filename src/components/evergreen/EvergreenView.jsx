@@ -40,7 +40,7 @@ export function EvergreenView() {
         try {
             const res = await fetch('/api/evergreen/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
                 body: JSON.stringify({ content: contentText || contentUrl, niche }),
             });
             const data = await res.json();

@@ -47,7 +47,7 @@ export function AdminOverview() {
 
     useEffect(() => {
         fetch('/api/admin/stats', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${localStorage.getItem('velocity_token')}` },
         }).then(r => r.json()).then(setStats).catch(() => { }).finally(() => setLoading(false));
     }, []);
 

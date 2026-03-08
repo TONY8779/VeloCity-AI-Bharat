@@ -40,7 +40,7 @@ export function AdminUsers() {
     const [viewingUser, setViewingUser] = useState(null);
     const [userDetail, setUserDetail] = useState(null);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('velocity_token');
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
     const fetchUsers = useCallback(async () => {

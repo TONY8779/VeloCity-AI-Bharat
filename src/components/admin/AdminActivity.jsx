@@ -26,7 +26,7 @@ export function AdminActivity() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('velocity_token');
 
     useEffect(() => {
         setLoading(true);
