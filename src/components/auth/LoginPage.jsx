@@ -9,6 +9,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [showCreatePrompt, setShowCreatePrompt] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,7 +22,11 @@ export function LoginPage() {
       await login(email, password, rememberMe);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      const msg = err.message || 'Login failed';
+      setError(msg);
+      if (msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('credentials')) {
+        setShowCreatePrompt(true);
+      }
     }
     setLoading(false);
   };
@@ -45,6 +50,18 @@ export function LoginPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
               {error}
+            </div>
+          )}
+
+          {showCreatePrompt && (
+            <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl animate-pulse">
+              <p className="text-sm text-blue-300 font-semibold mb-2">Don't have an account yet?</p>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:bg-blue-400 transition-all"
+              >
+                Create your account →
+              </Link>
             </div>
           )}
 
@@ -103,7 +120,6 @@ export function LoginPage() {
 
         <div className="mt-7 text-center">
           <p className="text-[10px] text-zinc-700 font-medium tracking-wide">Vishal &middot; Bhumika &middot; Shlok &middot; Soham</p>
-          <p className="text-[9px] text-zinc-800 mt-0.5">Rizvi College AI Competition</p>
         </div>
       </div>
     </div>
