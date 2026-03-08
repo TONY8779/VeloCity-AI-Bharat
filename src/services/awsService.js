@@ -66,7 +66,12 @@ export async function fetchRoadmap(niche, channelContext) {
             niche,
             channelContext,
         });
-        return await Promise.race([fetchPromise, timeoutPromise]);
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+        // Validate response has roadmap array, otherwise use fallback
+        if (data?.roadmap && Array.isArray(data.roadmap) && data.roadmap.length > 0) {
+            return data;
+        }
+        return generateFallbackRoadmap(niche);
     } catch {
         return generateFallbackRoadmap(niche);
     }
